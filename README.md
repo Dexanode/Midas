@@ -49,7 +49,7 @@ Dua agent spesialis jalan paralel:
 ### Install
 
 ```bash
-git clone https://github.com/dexa555/midas
+git clone https://github.com/Dexanode/Midas
 cd midas
 npm install
 ```
