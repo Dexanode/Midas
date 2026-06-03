@@ -2,7 +2,7 @@
 
 > Autonomous XAU/USD trading agent for Valetax (MT5), powered by LLMs via OpenRouter.
 > Inspired by [Meridian](https://github.com/yunus-0x/meridian) architecture.
-> **Status:** Skeleton ready, waiting for trading logic from Dexa's friend.
+> **Trading Logic:** Labuu Method — Confluence Scanner (H4 zones + H1 signals)
 
 ---
 
@@ -19,6 +19,9 @@ midas/
 ├── decision-log.js       # Trade journal + performance stats
 ├── lessons.js            # Learning system (extract, store, inject, evolve)
 ├── state.js              # Position tracker + risk/emergency state
+├── scanner/
+│   └── labuu.js          # Labuu confluence scanner (H4 zones + H1 signals)
+├── telegram.js           # Telegram bot integration
 ├── bridge/
 │   ├── mt5_bridge.py     # Python MT5 JSON-RPC subprocess
 │   └── bridge.js         # Node.js client to Python bridge
@@ -34,6 +37,40 @@ midas/
 
 ## 🧠 Architecture Overview
 
+### Hybrid Flow (Opsi A — Token-Efficient)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              CRON — Every 60 Seconds                      │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  scanner/labuu.js (CPU-only, FREE)                       │
+│  ├─ Fetch H4 (100 bars) + H1 (200 bars) via MT5         │
+│  ├─ Detect swing highs/lows (body-based, L2/R2)         │
+│  ├─ Classify zones: S / R / SBR / RBS                   │
+│  ├─ Merge nearby zones (≤50 pips)                       │
+│  ├─ H1 signal scan: CONFIRMED / PINBAR / ENGULFING     │
+│  └─ Build ready-to-execute order params                 │
+│                                                          │
+│  IF signal found:                                        │
+│    → LLM Review (1 API call, ~500 tokens)               │
+│    → Approve: open_order() with scanner params          │
+│    → Reject: skip + log reason                          │
+│                                                          │
+│  IF no signal:                                           │
+│    → Silent skip, no LLM call needed                    │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+                               │
+┌──────────────────────────────▼──────────────────────────┐
+│                MANAGEMENT — Every 5 Minutes               │
+│  LLM reviews positions → modify SL/TP → trailing stop   │
+│  Trailing: Labuu progressive steps (rule-based)         │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Full Architecture
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    USER / REPL / CLI                      │
@@ -42,11 +79,12 @@ midas/
 ┌──────────────────────▼──────────────────────────────────┐
 │                   index.js (Main)                         │
 │  ┌─────────────────┐  ┌─────────────────┐               │
-│  │  Cron Scheduler  │  │  REPL Interface │               │
+│  │  Cron Scheduler  │  │  Telegram       │               │
 │  │  - Screening     │  │  - /status      │               │
-│  │    (every 15m)   │  │  - /screen      │               │
-│  │  - Management    │  │  - /manage      │               │
-│  │    (every 5m)    │  │  - /lessons     │               │
+│  │    (every 1m)    │  │  - /positions   │               │
+│  │  - Management    │  │  - /close       │               │
+│  │    (every 5m)    │  │  - /screen      │               │
+│  └────────┬─────────┘  │  - /manage      │               │
 │  └────────┬─────────┘  │  - /evolve     │               │
 │           │             │  - /stop        │               │
 │           │             └────────┬────────┘               │
@@ -86,25 +124,26 @@ midas/
 
 ## 🔄 Data Flow: One Full Cycle
 
-### Screening Cycle (cari setup entry)
+### Screening Cycle (Confluence Scanner + LLM Review)
 
 ```
-1. Cron triggers runScreeningCycle()
-2. agent.js dipanggil dengan goal SCREENER
-3. prompt.js builds system prompt:
-   - Balance & positions live
-   - Screening rules (R:R, spread, session, ATR)
-   - Lessons injected (pinned + relevant)
-   - Recent decisions + performance
-4. LLM reasons → calls tools:
-   - get_ohlcv(H1), get_ohlcv(M15), get_ohlcv(M5)
-   - get_spread(), get_balance(), get_positions()
-   - get_lessons() → recall past patterns
-5. LLM decides:
-   - FOUND SETUP → open_order(symbol, type, volume, sl, tp)
-   - NO SETUP → skip with reasoning
-6. Decision logged to trade-journal.json
-7. setLastScreening() updates state
+1. Cron triggers runScreeningCycle() (every 60s)
+2. scanner/labuu.js runs scanConfluenceZones():
+   - Fetch H4 + H1 from MT5 bridge
+   - Detect swing points → classify S/R/SBR/RBS zones
+   - Merge nearby zones
+   - Scan H1: CONFIRMED / PINBAR / ENGULFING
+   - Build order params (entry, SL, TP, volume)
+3. IF actionableSignals.length > 0:
+   a. agent.js called with SCREENER goal + scan result
+   b. prompt.js builds system prompt:
+      - Scan result (zones, signals, orders)
+      - Balance, positions, session
+      - Lessons (seek/avoid patterns)
+      - Recent decisions
+   c. LLM reviews scan → approves one signal → calls open_order()
+   d. Decision logged to trade-journal.json
+4. IF no signals → silent skip (no LLM call, saves tokens)
 ```
 
 ### Management Cycle (pantau posisi open)
@@ -167,6 +206,7 @@ midas/
 
 | Tool | Role Access | Description |
 |------|-------------|-------------|
+| `scan_confluence_zones` | Screener | Labuu scanner: H4 zones + H1 signals |
 | `get_ohlcv` | All | Fetch OHLCV bars + ATR, SMA |
 | `get_spread` | All | Current bid/ask spread in pips |
 | `get_balance` | All | Account equity, margin, PnL |
@@ -312,6 +352,61 @@ midas start             # Autonomous mode
 4. **Multi-pair** — currently XAUUSD only
 5. **Backtesting** — no historical simulation yet
 6. **Trading logic** — currently generic rules, waiting for friend's strategy
+
+---
+
+*Generated 2026-06-03 by Exa 🦾*
+
+---
+
+## 🔬 Labuu Confluence Scanner
+
+### Zone Types
+
+| Zone | Origin | Condition | Signal |
+|------|--------|-----------|--------|
+| **S** (Support) | Swing Low | Never broken down | BUY |
+| **R** (Resistance) | Swing High | Never broken up | SELL |
+| **SBR** (S→R flip) | Swing Low | Broken down, price below level | SELL |
+| **RBS** (R→S flip) | Swing High | Broken up, price above level | BUY |
+
+### H1 Entry Signals
+
+| Signal | Strength | Detection |
+|--------|----------|-----------|
+| **CONFIRMED** | 3 | Previous candle body already crossed the level |
+| **PINBAR** | 2 | Shadow ≥ 2x body, body ≤ 40% candle range |
+| **ENGULFING** | 2 | Current body fully engulfs previous body |
+
+### Order Parameters
+
+| Parameter | Value |
+|-----------|-------|
+| Order Type | BUY/SELL LIMIT |
+| SL | 150 pips from entry |
+| TP | 300 pips from entry (R:R 1:2) |
+| Lot Size | 0.01 |
+| Expiry | +4 hours (next H4 candle) |
+| Max Spread | 100 pips |
+| Filling | FOK (Fill or Kill) |
+
+### Trailing Stop (Progressive)
+
+| Profit | SL Moves To |
+|--------|------------|
+| ≥20 pips | Entry +5 (BE+5) |
+| ≥30 pips | Entry +10 |
+| ≥50 pips | Entry +15 |
+| ≥100 pips | Entry +50 |
+| ≥150 pips | Entry +100 |
+| ≥200 pips | Entry +150 |
+| ≥250 pips | Entry +200 |
+
+SL only moves in profitable direction — never backwards.
+
+### Token Efficiency
+
+Scanner runs on CPU (free) every 60 seconds. LLM only called when actionable signals are found — estimated 10-30 calls/day vs 1,440/day full LLM approach.
 
 ---
 
