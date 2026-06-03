@@ -1,0 +1,41 @@
+{
+  "symbol": "XAUUSD",
+  "timeframe": "M5",
+  "screening": {
+    "intervalMin": 15,
+    "maxPositions": 3,
+    "riskPerTradePct": 1.0,
+    "minRiskRewardRatio": 1.5,
+    "maxSpreadPips": 35,
+    "minATR": 200,
+    "allowedSessions": ["London", "New York"],
+    "avoidNewsMinutes": 30
+  },
+  "management": {
+    "intervalMin": 5,
+    "trailingStopPips": 0,
+    "takeProfitPips": 0,
+    "stopLossPips": 0,
+    "breakevenAfterPips": 100,
+    "breakevenLockPips": 10,
+    "partialClosePct": 50,
+    "partialCloseAfterPips": 80,
+    "maxDrawdownPct": -5,
+    "outOfRangeWaitMinutes": 60
+  },
+  "schedule": {
+    "screeningIntervalMin": 15,
+    "managementIntervalMin": 5
+  },
+  "llm": {
+    "maxSteps": 15,
+    "screeningModel": "openai/gpt-oss-20b:free",
+    "managementModel": "openai/gpt-oss-20b:free",
+    "generalModel": "openai/gpt-oss-20b:free"
+  },
+  "risk": {
+    "maxDailyLossPct": 3.0,
+    "maxWeeklyLossPct": 6.0,
+    "maxConsecutiveLosses": 5
+  }
+}

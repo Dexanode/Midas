@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.raw
+.envrypt
+state.json
+trade-journal.json
+lessons.json
+decision-log.json
+*.pyc
+__pycache__/
