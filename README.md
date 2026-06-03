@@ -1,6 +1,7 @@
-# 🥇 Forex LLM Agent
+# 🪙 Midas
 
 > Autonomous XAU/USD trading agent for Valetax (MT5), powered by LLMs.
+> *Everything it touches turns to gold.*
 > Inspired by [Meridian](https://github.com/yunus-0x/meridian) architecture.
 
 ---
@@ -48,8 +49,8 @@ Dua agent spesialis jalan paralel:
 ### Install
 
 ```bash
-git clone https://github.com/YOUR_USER/forex-llm
-cd forex-llm
+git clone https://github.com/dexa555/midas
+cd midas
 npm install
 ```
 
@@ -99,15 +100,15 @@ npm start
 ```
 
 ```bash
-forex-llm balance
-forex-llm positions
-forex-llm screen --dry-run
-forex-llm performance
-forex-llm lessons
-forex-llm lessons add "jangan entry pas asia kalo gaada struktur"
-forex-llm evolve
-forex-llm config get
-forex-llm config set screening.riskPerTradePct 2.0
+midas balance
+midas positions
+midas screen --dry-run
+midas performance
+midas lessons
+midas lessons add "jangan entry pas asia kalo gaada struktur"
+midas evolve
+midas config get
+midas config set screening.riskPerTradePct 2.0
 ```
 
 ---
@@ -175,7 +176,7 @@ Semua bisa di-edit di `user-config.json` atau dari CLI:
 ## Struktur Project
 
 ```
-forex-llm/
+midas/
 ├── index.js              # Main entry: cron + REPL
 ├── agent.js              # ReAct agent loop (jantung)
 ├── prompt.js             # System prompt/SOP per role

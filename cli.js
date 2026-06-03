@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * forex-llm CLI — direct commands with JSON output.
+ * midas CLI — direct commands with JSON output.
  * Inspired by Meridian's CLI architecture.
  */
 
@@ -147,22 +147,22 @@ async function main() {
     }
 
     default: {
-      console.log(`forex-llm — Autonomous XAU/USD Trading Agent
+      console.log(`🪙 Midas — Autonomous XAU/USD Trading Agent
 
 Commands:
-  forex-llm balance           Show account balance
-  forex-llm positions          List open positions
-  forex-llm screen             Run AI screening cycle (analysis only)
-  forex-llm manage             Run AI management cycle
-  forex-llm ohlcv [symbol] [--tf=M5] [--bars=100]  Fetch OHLCV data
-  forex-llm performance        Show trade performance
-  forex-llm config get         Show current config
-  forex-llm config set <k> <v> Update config
-  forex-llm lessons            List all lessons
-  forex-llm lessons add <text> Add manual lesson
-  forex-llm lessons pin <id>   Toggle pin a lesson
-  forex-llm evolve             Evolve thresholds from performance
-  forex-llm start              Start autonomous agent with cron
+  midas balance           Show account balance
+  midas positions          List open positions
+  midas screen             Run AI screening cycle (analysis only)
+  midas manage             Run AI management cycle
+  midas ohlcv [symbol] [--tf=M5] [--bars=100]  Fetch OHLCV data
+  midas performance        Show trade performance
+  midas config get         Show current config
+  midas config set <k> <v> Update config
+  midas lessons            List all lessons
+  midas lessons add <text> Add manual lesson
+  midas lessons pin <id>   Toggle pin a lesson
+  midas evolve             Evolve thresholds from performance
+  midas start              Start autonomous agent with cron
 
 Flags:
   --dry-run    Skip all real orders (safe testing)

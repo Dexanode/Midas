@@ -1,11 +1,11 @@
 {
-  "name": "forex-llm",
+  "name": "midas",
   "version": "0.1.0",
   "type": "module",
-  "description": "Autonomous Forex trading agent for XAU/USD on Valetax (MT5), powered by LLMs",
+  "description": "Midas — autonomous XAU/USD trading agent for Valetax (MT5), powered by LLMs. Everything it touches turns to gold.",
   "main": "index.js",
   "bin": {
-    "forex-llm": "cli.js"
+    "midas": "cli.js"
   },
   "scripts": {
     "start": "node index.js",

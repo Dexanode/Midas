@@ -1,5 +1,5 @@
 /**
- * Forex LLM Agent — Main Entry Point
+ * Midas — Main Entry Point
  * Starts autonomous screening and management cycles on cron schedules.
  * Provides an interactive REPL for manual control.
  */
@@ -279,7 +279,8 @@ function startREPL() {
 async function main() {
   console.log(`
 ╔══════════════════════════════════════════╗
-║       FOREX LLM AGENT — XAU/USD          ║
+║           🪙  M I D A S  🪙               ║
+║       XAU/USD Autonomous Agent            ║
 ║       Meridian-inspired, MT5-powered      ║
 ╠══════════════════════════════════════════╣
 ║  Mode: ${DRY_RUN ? "🔴 DRY RUN" : "🟢 LIVE"}                          ║

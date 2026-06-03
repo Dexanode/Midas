@@ -1,4 +1,4 @@
-# Forex LLM Agent — Architecture & Flow
+# Midas — Architecture & Flow
 
 > Autonomous XAU/USD trading agent for Valetax (MT5), powered by LLMs via OpenRouter.
 > Inspired by [Meridian](https://github.com/yunus-0x/meridian) architecture.
@@ -9,7 +9,7 @@
 ## 📁 Project Structure
 
 ```
-forex-llm/
+midas/
 ├── index.js              # Main entry: cron scheduler + REPL
 ├── cli.js                # CLI for direct commands
 ├── agent.js              # ReAct agent loop (core engine)
@@ -255,19 +255,19 @@ npm start
 
 ### CLI Commands
 ```bash
-forex-llm balance          # Account balance
-forex-llm positions         # Open positions
-forex-llm screen [--dry-run]  # AI screening (analysis only)
-forex-llm manage [--dry-run]  # AI management cycle
-forex-llm ohlcv [symbol] --tf=M5 --bars=100
-forex-llm performance       # Trade stats
-forex-llm lessons           # List all lessons
-forex-llm lessons add "..." # Manual lesson
-forex-llm lessons pin <id>  # Pin/unpin lesson
-forex-llm evolve            # Auto-evolve thresholds
-forex-llm config get        # Show config
-forex-llm config set k v    # Update config
-forex-llm start             # Autonomous mode
+midas balance          # Account balance
+midas positions         # Open positions
+midas screen [--dry-run]  # AI screening (analysis only)
+midas manage [--dry-run]  # AI management cycle
+midas ohlcv [symbol] --tf=M5 --bars=100
+midas performance       # Trade stats
+midas lessons           # List all lessons
+midas lessons add "..." # Manual lesson
+midas lessons pin <id>  # Pin/unpin lesson
+midas evolve            # Auto-evolve thresholds
+midas config get        # Show config
+midas config set k v    # Update config
+midas start             # Autonomous mode
 ```
 
 ### REPL Commands (interactive)
@@ -299,7 +299,7 @@ forex-llm start             # Autonomous mode
 
 ### Models:
 - Edit `user-config.json` → `llm.screeningModel`, `llm.managementModel`, `llm.generalModel`
-- Or override at runtime: `forex-llm config set llm.screeningModel "anthropic/claude-opus-4-5"`
+- Or override at runtime: `midas config set llm.screeningModel "anthropic/claude-opus-4-5"`
 - Any OpenRouter model supported
 
 ---
