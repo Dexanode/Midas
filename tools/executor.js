@@ -7,6 +7,7 @@ import * as mt5 from "../bridge/bridge.js";
 import { config } from "../config.js";
 import { getRecentDecisions, getPerformanceSummary } from "../decision-log.js";
 import { getLessons, addLesson, evolveThresholds } from "../lessons.js";
+import { scanConfluenceZones, configureScanner } from "../scanner/labuu.js";
 
 const DRY_RUN = process.env.DRY_RUN === "true";
 
@@ -143,6 +144,19 @@ export async function executeTool(toolName, args) {
       try { parsed = JSON.parse(value); } catch { parsed = value; }
       applyConfigUpdate(key, parsed);
       return JSON.stringify({ ok: true, key, value: parsed });
+    }
+
+    // ── Confluence Scanner ────────────────────────────────────
+    case "scan_confluence_zones": {
+      if (args.slPips || args.tpPips || args.lotSize) {
+        configureScanner({
+          slPips: args.slPips || 150,
+          tpPips: args.tpPips || 300,
+          lotSize: args.lotSize || 0.01,
+        });
+      }
+      const result = await scanConfluenceZones();
+      return JSON.stringify(result);
     }
 
     // ── Lessons & Learning ────────────────────────────────────

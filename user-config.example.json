@@ -2,11 +2,11 @@
   "symbol": "XAUUSD",
   "timeframe": "M5",
   "screening": {
-    "intervalMin": 15,
+    "intervalMin": 1,
     "maxPositions": 3,
     "riskPerTradePct": 1.0,
     "minRiskRewardRatio": 1.5,
-    "maxSpreadPips": 35,
+    "maxSpreadPips": 100,
     "minATR": 200,
     "allowedSessions": ["London", "New York"],
     "avoidNewsMinutes": 30
@@ -24,7 +24,7 @@
     "outOfRangeWaitMinutes": 60
   },
   "schedule": {
-    "screeningIntervalMin": 15,
+    "screeningIntervalMin": 1,
     "managementIntervalMin": 5
   },
   "llm": {

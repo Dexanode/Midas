@@ -61,16 +61,15 @@ async function runScreeningCycle({ silent = false } = {}) {
   timers.screeningLastRun = Date.now();
   log("cron", "🔍 Starting SCREENING cycle");
 
-  const goal = `SCREENING CYCLE: Analyze XAU/USD for trade setups.
+  const goal = `SCREENING CYCLE — Confluence Scanner Labuu Method
 
-1. Fetch H1, M15, and M5 OHLCV data.
-2. Check current spread.
-3. Check account balance and open positions.
-4. Analyze trend, support/resistance, and entry triggers.
-5. If a high-conviction setup exists: open the trade with proper SL/TP.
-6. If no setup: report why and skip.
+Step 1: Call scan_confluence_zones() to detect H4 zones + H1 signals
+Step 2: Review the results — which zones have valid signals?
+Step 3: Select the best signal (prioritize: CONFIRMED > PINBAR > ENGULFING)
+Step 4: If you approve the signal → call open_order() using the EXACT params from scan result
+Step 5: If no good signal → skip and report why
 
-Be decisive. Quality over quantity. Max ${config.screening?.maxPositions || 3} positions total.`;
+BE SELECTIVE. Max 1 entry per cycle. Max ${config.screening?.maxPositions || 3} total positions.`;
 
   try {
     const report = await agentLoop(goal, 15, [], "SCREENER");

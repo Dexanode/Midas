@@ -5,6 +5,26 @@
 
 export const tools = [
   // ═══════════════════════════════════════════
+  //  CONFLUENCE SCANNER (Labuu Method)
+  // ═══════════════════════════════════════════
+  {
+    type: "function",
+    function: {
+      name: "scan_confluence_zones",
+      description: `Run the Labuu confluence scanner on XAUUSD. Detects H4 zones (S/R/SBR/RBS) and H1 entry signals (Pinbar/Engulfing/Confirmed).
+Returns a structured report with ALL detected zones, which zones have valid H1 signals, and ready-to-execute order parameters.
+Use this at the start of EVERY screening cycle. This is the primary data source for trade decisions.`,
+      parameters: {
+        type: "object",
+        properties: {
+          slPips: { type: "number", description: "Override SL in pips (default 150)" },
+          tpPips: { type: "number", description: "Override TP in pips (default 300)" },
+          lotSize: { type: "number", description: "Override lot size (default 0.01)" }
+        }
+      }
+    }
+  },
+  // ═══════════════════════════════════════════
   //  MARKET DATA
   // ═══════════════════════════════════════════
   {
@@ -216,6 +236,7 @@ Can adjust risk parameters, intervals, thresholds, and model settings.`,
 
 /** Tool subsets per agent role */
 export const SCREENER_TOOLS = new Set([
+  "scan_confluence_zones",
   "get_ohlcv", "get_spread", "get_balance", "get_positions",
   "open_order", "get_trade_journal", "get_performance", "update_config",
   "get_lessons", "add_lesson"

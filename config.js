@@ -31,7 +31,7 @@ function getDefaults() {
     symbol: "XAUUSD",
     timeframe: "M5",
     screening: {
-      intervalMin: 15,
+      intervalMin: 1,  // 60 seconds (Labuu scanner)
       maxPositions: 3,
       riskPerTradePct: 1.0,
       minRiskRewardRatio: 1.5,
@@ -53,7 +53,7 @@ function getDefaults() {
       outOfRangeWaitMinutes: 60,
     },
     schedule: {
-      screeningIntervalMin: 15,
+      screeningIntervalMin: 1,  // 60 seconds for Labuu scanner
       managementIntervalMin: 5,
     },
     llm: {
