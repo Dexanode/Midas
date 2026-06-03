@@ -13,6 +13,7 @@ import { config } from "./config.js";
 import { setLastScreening, setLastManagement, isEmergencyStop } from "./state.js";
 import { appendDecision, recordClosedTrade } from "./decision-log.js";
 import { extractLessonFromTrade, evolveThresholds } from "./lessons.js";
+import * as telegram from "./telegram.js";
 
 const DRY_RUN = process.env.DRY_RUN === "true";
 
@@ -83,6 +84,12 @@ Be decisive. Quality over quantity. Max ${config.screening?.maxPositions || 3} p
     });
 
     log("cron", `Screening complete: ${report?.slice(0, 150)}...`);
+
+    // Telegram notification
+    if (telegram.isEnabled() && !silent && report) {
+      telegram.notifyScreeningReport(report).catch(() => {});
+    }
+
     return report;
   } catch (e) {
     log("error", `Screening failed: ${e.message}`);
@@ -151,6 +158,12 @@ BE DECISIVE. Call modify_position or close_position as needed.`;
     const report = await agentLoop(goal, 12, [], "MANAGER");
     setLastManagement();
     log("cron", `Management complete: ${report?.slice(0, 150)}...`);
+
+    // Telegram notification
+    if (telegram.isEnabled() && !silent && report) {
+      telegram.notifyManagementReport(report).catch(() => {});
+    }
+
     return report;
   } catch (e) {
     log("error", `Management failed: ${e.message}`);
@@ -310,13 +323,146 @@ async function main() {
   await runScreeningCycle().catch(e => log("error", `Initial screening: ${e.message}`));
   await runManagementCycle().catch(e => log("error", `Initial management: ${e.message}`));
 
+  // Start Telegram if configured
+  if (telegram.isEnabled()) {
+    log("startup", "Starting Telegram integration...");
+    registerTelegramHandlers();
+    telegram.startPolling();
+  }
+
   // Start REPL for manual interaction
   startREPL();
+}
+
+// ═══════════════════════════════════════════
+//  TELEGRAM HANDLERS
+// ═══════════════════════════════════════════
+function registerTelegramHandlers() {
+  telegram.onCommand("status", async (args, msg) => {
+    const bal = await getBalance().catch(() => null);
+    const pos = await getPositions().catch(() => null);
+    let text = "🪙 <b>MIDAS — Status</b>\n────────────────────\n";
+    if (bal?.ok) {
+      text += `Balance: <b>$${bal.balance}</b>\nEquity: $${bal.equity}\nFree Margin: $${bal.free_margin}\nFloating PnL: $${bal.profit}\n\n`;
+    }
+    if (pos?.ok) {
+      text += `<b>Open Positions: ${pos.count}</b>\n`;
+      pos.positions?.forEach((p, i) => {
+        text += `${i + 1}. ${p.type} ${p.symbol} ${p.volume}lot @ ${p.open_price} → ${p.current_price}\n   PnL: ${p.pnl_pips} pips | $${p.profit?.toFixed(2)}\n`;
+      });
+    }
+    if (!pos?.ok || pos.count === 0) text += "No open positions.";
+    await telegram.sendHTML(text);
+  });
+
+  telegram.onCommand("positions", async () => {
+    const pos = await getPositions().catch(() => null);
+    if (!pos?.ok || pos.count === 0) {
+      await telegram.sendHTML("📊 No open positions.");
+      return;
+    }
+    let text = `<b>📊 Open Positions (${pos.count})</b>\n────────────────────\n`;
+    pos.positions?.forEach((p, i) => {
+      const emoji = p.pnl_pips > 0 ? "🟢" : "🔴";
+      text += `${emoji} <b>#${i + 1}</b> Ticket: <code>${p.ticket}</code>\n`;
+      text += `${p.type} ${p.symbol} ${p.volume}lot\n`;
+      text += `${p.open_price} → ${p.current_price} | ${p.pnl_pips > 0 ? "+" : ""}${p.pnl_pips} pips\n`;
+      text += `SL: ${p.sl || "—"} | TP: ${p.tp || "—"}\n\n`;
+    });
+    await telegram.sendHTML(text);
+  });
+
+  telegram.onCommand("close", async (args) => {
+    const index = parseInt(args) - 1;
+    const pos = await getPositions().catch(() => null);
+    if (!pos?.ok || !pos.positions?.[index]) {
+      await telegram.sendHTML("❌ Invalid position number. Use /positions first.");
+      return;
+    }
+    const target = pos.positions[index];
+    try {
+      const { closePosition } = await import("./bridge/bridge.js");
+      const result = await closePosition(target.ticket);
+      if (result.ok) {
+        await telegram.sendHTML(`✅ Closed ${target.type} ${target.symbol} ticket ${target.ticket}\nPnL: ${target.pnl_pips} pips / $${target.profit?.toFixed(2)}`);
+      } else {
+        await telegram.sendHTML(`❌ Close failed: ${result.error}`);
+      }
+    } catch (e) {
+      await telegram.sendHTML(`❌ Error: ${e.message}`);
+    }
+  });
+
+  telegram.onCommand("screen", async () => {
+    await telegram.sendHTML("🔍 Running screening cycle...");
+    const report = await runScreeningCycle();
+    if (report) {
+      await telegram.notifyScreeningReport(report);
+    }
+  });
+
+  telegram.onCommand("manage", async () => {
+    await telegram.sendHTML("📊 Running management cycle...");
+    const report = await runManagementCycle();
+    if (report) {
+      await telegram.notifyManagementReport(report);
+    }
+  });
+
+  telegram.onCommand("lessons", async () => {
+    const { getLessons } = await import("./lessons.js");
+    const ls = getLessons(10);
+    if (ls.total === 0) {
+      await telegram.sendHTML("📚 No lessons yet — keep trading!");
+      return;
+    }
+    let text = `<b>📚 Lessons (${ls.total} total)</b>\n────────────────────\n`;
+    ls.lessons.forEach((l, i) => {
+      const icon = l.outcome === "win" ? "🟢" : l.outcome === "loss" ? "🔴" : "📝";
+      text += `${icon} ${l.pinned ? "📌" : ""} ${l.rule}\n`;
+      text += `<i>${l.outcome} • ${l.context || ""} • used ${l.usage_count}x</i>\n\n`;
+    });
+    await telegram.sendHTML(text);
+  });
+
+  telegram.onCommand("evolve", async () => {
+    const result = evolveThresholds();
+    if (result.evolved) {
+      await telegram.sendHTML(`🧬 <b>Thresholds Evolved!</b>\n────────────────────\n${JSON.stringify(result.changes, null, 2)}\n\n<i>${result.rationale}</i>`);
+    } else {
+      await telegram.sendHTML(`🧬 No evolution needed.\n<i>${result.rationale}</i>`);
+    }
+  });
+
+  telegram.onCommand("help", async () => {
+    await telegram.sendHTML(`🪙 <b>MIDAS — Commands</b>
+────────────────────
+/status — Balance + positions
+/positions — Open positions detail
+/close &lt;n&gt; — Close position by number
+/screen — Run screening cycle
+/manage — Run management cycle
+/lessons — View learned lessons
+/evolve — Auto-evolve thresholds
+/help — This message
+
+<i>Or just chat naturally — Midas understands.</i>`);
+  });
+
+  // Free-form chat → goes to agent
+  telegram.onChatMessage(async (text) => {
+    await telegram.sendHTML("🤔 Thinking...");
+    const report = await agentLoop(text, 10, [], "GENERAL");
+    await telegram.sendHTML(report || "I'm not sure about that.");
+  });
+
+  log("startup", "Telegram handlers registered");
 }
 
 // Handle graceful shutdown
 process.on("SIGINT", () => {
   log("startup", "Received SIGINT — shutting down");
+  telegram.stopPolling();
   stopCronJobs();
   shutdownBridge();
   process.exit(0);
@@ -324,6 +470,7 @@ process.on("SIGINT", () => {
 
 process.on("SIGTERM", () => {
   log("startup", "Received SIGTERM — shutting down");
+  telegram.stopPolling();
   stopCronJobs();
   shutdownBridge();
   process.exit(0);
